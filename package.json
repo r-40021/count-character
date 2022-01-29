@@ -1,0 +1,6 @@
+{
+  "name": "count-character",
+  "version": "0.0.1",
+  "description": "テキストボックスやテキストエリアに入力された文字数を数える拡張機能",
+  "license": "MIT"
+}
