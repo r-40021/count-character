@@ -1,8 +1,13 @@
 {
   "name": "文字数カウント",
   "description": "テキストボックスやテキストエリアに入力した文字数を数える拡張機能",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "manifest_version": 2,
+  "icons": {
+    "16": "icon/icon_16x16.png",
+    "48": "icon/icon_48x48.png",
+    "128": "icon/icon_128x128.png"
+  },
   "content_scripts": [{
     "matches": ["<all_urls>"],
     "js": ["script/content.js"]
