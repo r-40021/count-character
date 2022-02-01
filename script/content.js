@@ -29,6 +29,8 @@
    * @param {NodeList} elements テキストボックスの要素の NodeList
    */
   function addEvent(isRemoved, elements) {
+    const isMoving = false; // マウスカーソルによりカウンターが移動した状態か
+
     elements.forEach((element) => {
       const handleTextInput = () => {
         const textLength = element.value.length;
@@ -129,7 +131,7 @@
       countDisplay.style.right = '';
       countDisplay.style.left = x;
     } else {
-      x = window.innerWidth - (window.scrollX + window.innerWidth - 10) + 'px';
+      x = document.body.clientWidth - (window.scrollX + window.innerWidth - 10) + 'px';
       countDisplay.style.left = '';
       countDisplay.style.right = x;
     }
@@ -162,4 +164,30 @@
       }
     }
   })();
+
+
+  function mouseMove(e) {
+    if(!countDisplay) return;
+    let displayX;
+    if (countDisplay.style.left) displayX = parseFloat(countDisplay.style.left.replace('px', ''))
+    else if (countDisplay.style.right) displayX = parseFloat(countDisplay.style.right.replace('px', ''))
+    else return;
+
+    if (!countDisplay.style.top) return;
+    const displayY = parseFloat(countDisplay.style.top.replace('px', ''));
+
+    console.log(`ディスプレイの座標： (${displayX}, ${displayY}})`)
+
+    const mouseX = e.pageX;
+    const mouseY = e.pageY;
+    
+
+    if(Math.abs(mouseX - displayX) < 10 || Math.abs(mouseY - displayY) < 10) {
+      const angle = Math.atan2(displayY - mouseY, displayX - mouseX);
+      countDisplay.style.top = displayY + Math.cos(angle)*3 + 'px';
+      countDisplay.style.left = displayX + Math.cos(angle)*3 + 'px';
+    }
+
+  }
+  document.addEventListener('mousemove', mouseMove);
 })();
