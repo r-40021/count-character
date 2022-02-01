@@ -1,31 +1,73 @@
 (() => {
-  const elements = document.querySelectorAll('input:not([type]),input[type=text],input[type=search],input[type=tel],input[type=url],input[type=email],input[type=password],input[type=number],textarea');
+  let elements = document.querySelectorAll('input:not([type]),input[type=text],input[type=search],input[type=tel],input[type=url],input[type=email],input[type=password],input[type=number],textarea');
   let countDisplay; // 文字数ディスプレイの要素
   let opacityTimeout, displayTimeout; // 2秒間操作がなかったら透明度を下げる timeout と、 10秒間操作がなかったら非表示にする timeout
 
-  elements.forEach((element) => {
-    element.addEventListener('input', () => {
-      const textLength = element.value.length;
-      createDisplayElement(element);
-      countDisplay.textContent = textLength;
-      throttle(setCoordDinateToCurrentElement);
-    });
+  addEvent(false, elements);
 
-    element.addEventListener('focus', () => {
-      createDisplayElement(element);
-      window.addEventListener('scroll', () => throttle(setCoordDinateToCurrentElement));
-      window.addEventListener('resize', () => throttle(setCoordDinateToCurrentElement));
-    });
+  const observeElem = document.body;
+  const observeConfig = {
+    childList: true,
+    subtree: true
+  }
 
-    element.addEventListener('blur', () => {
-      if (countDisplay) countDisplay.remove();
-      countDisplay = null;
-      window.removeEventListener('scroll', () => throttle(setCoordDinateToCurrentElement));
-      window.removeEventListener('resize', () => throttle(setCoordDinateToCurrentElement));
+  /* 要素の変化を監視し、動的に生成された要素にもイベントを登録 */
+  const mutationObserver = new MutationObserver(() => {
+    mutationObserver.disconnect();
+    addEvent(true, elements);
+    const newElements = document.querySelectorAll('input:not([type]),input[type=text],input[type=search],input[type=tel],input[type=url],input[type=email],input[type=password],input[type=number],textarea');
+    addEvent(false, newElements);
+    elements = newElements;
+    mutationObserver.observe(observeElem, observeConfig);
+  });
+
+  mutationObserver.observe(observeElem, observeConfig);
+
+  /**
+   * テキストボックスにイベントを登録or解除する
+   * @param {Boolean} isRemoved イベントリスナーを解除するか否か
+   * @param {NodeList} elements テキストボックスの要素の NodeList
+   */
+  function addEvent(isRemoved, elements) {
+    elements.forEach((element) => {
+      const handleTextInput = () => {
+        const textLength = element.value.length;
+        createDisplayElement(element);
+        countDisplay.textContent = textLength;
+        throttle(setCoordDinateToCurrentElement);
+      };
+
+      const handleFocus = () => {
+        createDisplayElement(element);
+        window.addEventListener('scroll', () => throttle(setCoordDinateToCurrentElement));
+        window.addEventListener('resize', () => throttle(setCoordDinateToCurrentElement));
+      };
+
+      const handleBlur = () => {
+        if (countDisplay) countDisplay.remove();
+        countDisplay = null;
+        window.removeEventListener('scroll', () => throttle(setCoordDinateToCurrentElement));
+        window.removeEventListener('resize', () => throttle(setCoordDinateToCurrentElement));
+      }
+
+      if (isRemoved) {
+        element.removeEventListener('input', handleTextInput);
+
+        element.removeEventListener('focus', handleFocus);
+
+        element.removeEventListener('blur', handleBlur);
+      } else {
+        element.addEventListener('input', handleTextInput);
+
+        element.addEventListener('focus', handleFocus);
+
+        element.addEventListener('blur', handleBlur);
+      }
+
+      const setCoordDinateToCurrentElement = () => setCoordinate(element);
     })
+  }
 
-    const setCoordDinateToCurrentElement = () => setCoordinate(element);
-  })
 
   /**
    * 文字数ディスプレイの生成
