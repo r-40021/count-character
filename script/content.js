@@ -41,15 +41,17 @@
 
       const handleFocus = () => {
         createDisplayElement(element);
-        window.addEventListener('scroll', () => throttle(setCoordDinateToCurrentElement));
-        window.addEventListener('resize', () => throttle(setCoordDinateToCurrentElement));
+        window.addEventListener('scroll', throttleSetCoordDinateToCurrentElement);
+        window.addEventListener('resize', throttleSetCoordDinateToCurrentElement);
+        document.addEventListener('mousemove', handleCursorMove);
       };
 
       const handleBlur = () => {
         if (countDisplay) countDisplay.remove();
         countDisplay = null;
-        window.removeEventListener('scroll', () => throttle(setCoordDinateToCurrentElement));
-        window.removeEventListener('resize', () => throttle(setCoordDinateToCurrentElement));
+        window.removeEventListener('scroll', throttleSetCoordDinateToCurrentElement);
+        window.removeEventListener('resize', throttleSetCoordDinateToCurrentElement);
+        document.removeEventListener('mousemove', handleCursorMove);
       }
 
       if (isRemoved) {
@@ -58,6 +60,7 @@
         element.removeEventListener('focus', handleFocus);
 
         element.removeEventListener('blur', handleBlur);
+
       } else {
         element.addEventListener('input', handleTextInput);
 
@@ -66,7 +69,11 @@
         element.addEventListener('blur', handleBlur);
       }
 
+      const throttleSetCoordDinateToCurrentElement = () => throttle(setCoordDinateToCurrentElement);
+
       const setCoordDinateToCurrentElement = () => setCoordinate(element);
+
+      const handleCursorMove = (e) => mouseMove(e, element);
     })
   }
 
@@ -122,8 +129,9 @@
   /**
    * 文字数ディスプレイの位置を調整
    * @param {Element} element 対象となるテキストボックスの要素
+   * @param {Boolean} forced 強制的に戻すか否か
    */
-  function setCoordinate(element) {
+  function setCoordinate(element, forced = false) {
     const clientRect = element.getBoundingClientRect();
     let x;
     if (clientRect.right + window.scrollX + 5 + 10 * element.value.length.toString().length + 10 * 2 <= window.scrollX + window.innerWidth - 10) {
@@ -165,29 +173,35 @@
     }
   })();
 
-
-  function mouseMove(e) {
+  /**
+   * マウスカーソルをよける
+   * @param {Object} e mousemoveイベントのオブジェクト
+   * @param {Object} element 対象となるテキストボックスのオブジェクト
+   */
+  function mouseMove(e, element) {
     if(!countDisplay) return;
-    let displayX;
-    if (countDisplay.style.left) displayX = parseFloat(countDisplay.style.left.replace('px', ''))
-    else if (countDisplay.style.right) displayX = parseFloat(countDisplay.style.right.replace('px', ''))
-    else return;
+    const clientRect = countDisplay.getBoundingClientRect();
+    const displayX = clientRect.left + countDisplay.clientWidth / 2;
+    const displayY = clientRect.top + countDisplay.clientHeight / 2;
 
-    if (!countDisplay.style.top) return;
-    const displayY = parseFloat(countDisplay.style.top.replace('px', ''));
-
-    console.log(`ディスプレイの座標： (${displayX}, ${displayY}})`)
+    
+    // console.log(`カウンターの座標：(${displayX}, ${displayY})`);
 
     const mouseX = e.pageX;
     const mouseY = e.pageY;
-    
 
-    if(Math.abs(mouseX - displayX) < 10 || Math.abs(mouseY - displayY) < 10) {
+    console.log(element)
+
+    if(Math.abs(mouseX - displayX) < 15 + countDisplay.clientWidth && Math.abs(mouseY - displayY) < 15 + countDisplay.clientHeight) {
+      const d = Math.sqrt(Math.pow(mouseX - displayX, 2) + Math.pow(mouseY - displayY, 2));
       const angle = Math.atan2(displayY - mouseY, displayX - mouseX);
-      countDisplay.style.top = displayY + Math.cos(angle)*3 + 'px';
-      countDisplay.style.left = displayX + Math.cos(angle)*3 + 'px';
+      countDisplay.style.top = clientRect.top + Math.sin(angle)*d + 'px';
+      // countDisplay.style.left = clientRect.left + Math.cos(angle)*d + 'px';
+    } else if (Math.abs(mouseX - displayX) > 15 + countDisplay.clientWidth && Math.abs(mouseY - displayY) > 15 + countDisplay.clientHeight){
+      // カーソルが離れたら元の位置に戻す
+      setCoordinate(element);
     }
 
   }
-  document.addEventListener('mousemove', mouseMove);
+  
 })();
