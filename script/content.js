@@ -2,6 +2,7 @@
   let elements = document.querySelectorAll('input:not([type]),input[type=text],input[type=search],input[type=tel],input[type=url],input[type=email],input[type=password],input[type=number],textarea');
   let countDisplay; // 文字数ディスプレイの要素
   let opacityTimeout, displayTimeout; // 2秒間操作がなかったら透明度を下げる timeout と、 10秒間操作がなかったら非表示にする timeout
+  let isRunningAwayFromCursor = false; // カーソルを避けているかどうか
 
   addEvent(false, elements);
 
@@ -101,7 +102,7 @@
 
       countDisplay.textContent = element.value.length;
 
-      setCoordinate(element);
+      setCoordinate(element, true);
 
       document.body.appendChild(countDisplay);
     }
@@ -111,18 +112,18 @@
    * 文字数ディスプレイの透明度を2秒後に下げる
    */
   function setOpacityTimeout() {
-    clearTimeout(opacityTimeout);
-    clearTimeout(displayTimeout);
-    if (countDisplay) {
-      countDisplay.style.opacity = 0.9
-      countDisplay.style.display = '';
-    }
-    opacityTimeout = setTimeout(() => {
-      if (countDisplay) countDisplay.style.opacity = 0.2;
-      displayTimeout = setTimeout(() => {
-        if (countDisplay) countDisplay.style.display = 'none';
-      }, 8000);
-    }, 2000);
+    // clearTimeout(opacityTimeout);
+    // clearTimeout(displayTimeout);
+    // if (countDisplay) {
+    //   countDisplay.style.opacity = 0.9
+    //   countDisplay.style.display = '';
+    // }
+    // opacityTimeout = setTimeout(() => {
+    //   if (countDisplay) countDisplay.style.opacity = 0.2;
+    //   displayTimeout = setTimeout(() => {
+    //     if (countDisplay) countDisplay.style.display = 'none';
+    //   }, 8000);
+    // }, 2000);
   }
 
 
@@ -132,6 +133,7 @@
    * @param {Boolean} forced 強制的に戻すか否か
    */
   function setCoordinate(element, forced = false) {
+    if (!forced && isRunningAwayFromCursor) return;
     const clientRect = element.getBoundingClientRect();
     let x;
     if (clientRect.right + window.scrollX + 5 + 10 * element.value.length.toString().length + 10 * 2 <= window.scrollX + window.innerWidth - 10) {
@@ -145,6 +147,7 @@
     }
     const y = Math.min(clientRect.top + element.clientHeight + window.scrollY + 5, window.scrollY + window.innerHeight - 40) + 'px';
     countDisplay.style.top = y;
+    isRunningAwayFromCursor = false;
   }
 
   /**
@@ -196,10 +199,11 @@
       const d = Math.sqrt(Math.pow(mouseX - displayX, 2) + Math.pow(mouseY - displayY, 2));
       const angle = Math.atan2(displayY - mouseY, displayX - mouseX);
       countDisplay.style.top = clientRect.top + Math.sin(angle)*d + 'px';
-      // countDisplay.style.left = clientRect.left + Math.cos(angle)*d + 'px';
+      isRunningAwayFromCursor = true;
     } else if (Math.abs(mouseX - displayX) > 15 + countDisplay.clientWidth && Math.abs(mouseY - displayY) > 15 + countDisplay.clientHeight){
       // カーソルが離れたら元の位置に戻す
-      setCoordinate(element);
+      setCoordinate(element, true);
+      isRunningAwayFromCursor = false;
     }
 
   }
