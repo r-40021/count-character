@@ -1,4 +1,4 @@
-# count-character
+# 文字数カウント
 A browser extension which counts characters in textboxes or textareas.
 
 テキストボックスやテキストエリアに入力された文字数をカウントします。
