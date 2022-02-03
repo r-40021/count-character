@@ -2,6 +2,7 @@
   let elements = document.querySelectorAll('input:not([type]),input[type=text],input[type=search],input[type=tel],input[type=url],input[type=email],input[type=password],input[type=number],textarea');
   let countDisplay; // 文字数ディスプレイの要素
   let opacityTimeout, displayTimeout; // 2秒間操作がなかったら透明度を下げる timeout と、 10秒間操作がなかったら非表示にする timeout
+  let isRunningAwayFromCursor = false; // カーソルを避けているかどうか
 
   addEvent(false, elements);
 
@@ -29,9 +30,15 @@
    * @param {NodeList} elements テキストボックスの要素の NodeList
    */
   function addEvent(isRemoved, elements) {
-    const isMoving = false; // マウスカーソルによりカウンターが移動した状態か
 
     elements.forEach((element) => {
+
+      const throttleSetCoordDinateToCurrentElement = () => throttle(setCoordDinateToCurrentElement);
+
+      const setCoordDinateToCurrentElement = () => setCoordinate(element);
+
+      const handleCursorMove = (e) => mouseMove(e, element);
+
       const handleTextInput = () => {
         const textLength = element.value.length;
         createDisplayElement(element);
@@ -40,6 +47,7 @@
       };
 
       const handleFocus = () => {
+        document.removeEventListener('mousemove', handleCursorMove);
         createDisplayElement(element);
         window.addEventListener('scroll', throttleSetCoordDinateToCurrentElement);
         window.addEventListener('resize', throttleSetCoordDinateToCurrentElement);
@@ -67,13 +75,10 @@
         element.addEventListener('focus', handleFocus);
 
         element.addEventListener('blur', handleBlur);
+        
+        // autofocus 要素への対応
+        if(document.activeElement === element) handleFocus();
       }
-
-      const throttleSetCoordDinateToCurrentElement = () => throttle(setCoordDinateToCurrentElement);
-
-      const setCoordDinateToCurrentElement = () => setCoordinate(element);
-
-      const handleCursorMove = (e) => mouseMove(e, element);
     })
   }
 
@@ -101,7 +106,7 @@
 
       countDisplay.textContent = element.value.length;
 
-      setCoordinate(element);
+      setCoordinate(element, true);
 
       document.body.appendChild(countDisplay);
     }
@@ -132,19 +137,19 @@
    * @param {Boolean} forced 強制的に戻すか否か
    */
   function setCoordinate(element, forced = false) {
+    if (!forced && isRunningAwayFromCursor) return;
     const clientRect = element.getBoundingClientRect();
-    let x;
     if (clientRect.right + window.scrollX + 5 + 10 * element.value.length.toString().length + 10 * 2 <= window.scrollX + window.innerWidth - 10) {
-      x = clientRect.right + window.scrollX + 5 + 'px';
       countDisplay.style.right = '';
-      countDisplay.style.left = x;
+      countDisplay.style.left =clientRect.right + window.scrollX + 5 + 'px';
     } else {
-      x = document.body.clientWidth - (window.scrollX + window.innerWidth - 10) + 'px';
       countDisplay.style.left = '';
-      countDisplay.style.right = x;
+      countDisplay.style.right = document.body.clientWidth - (window.scrollX + window.innerWidth - 10) + 'px';
     }
-    const y = Math.min(clientRect.top + element.clientHeight + window.scrollY + 5, window.scrollY + window.innerHeight - 40) + 'px';
-    countDisplay.style.top = y;
+    
+      countDisplay.style.top = Math.min(clientRect.top + element.clientHeight + window.scrollY + 5, window.scrollY + window.innerHeight - 50) + 'px';
+    
+    isRunningAwayFromCursor = false;
   }
 
   /**
@@ -153,7 +158,7 @@
    * @param {Number} interval 間引きする間隔(デフォルトでは1280ms)
    * @returns {Function} 
    */
-  var throttle = (function (callback, interval = 256) {
+  const throttle = (function (callback, interval = 256) {
     var time = Date.now(),
       lag,
       debounceTimer,
@@ -180,26 +185,25 @@
    */
   function mouseMove(e, element) {
     if(!countDisplay) return;
-    const clientRect = countDisplay.getBoundingClientRect();
-    const displayX = clientRect.left + countDisplay.clientWidth / 2;
-    const displayY = clientRect.top + countDisplay.clientHeight / 2;
 
-    
-    // console.log(`カウンターの座標：(${displayX}, ${displayY})`);
+    const clientRect = countDisplay.getBoundingClientRect();
+    const displayX = clientRect.left + window.scrollX + countDisplay.clientWidth / 2;
+    const displayY = clientRect.top + window.scrollY + countDisplay.clientHeight / 2;
 
     const mouseX = e.pageX;
     const mouseY = e.pageY;
 
-    console.log(element)
-
-    if(Math.abs(mouseX - displayX) < 15 + countDisplay.clientWidth && Math.abs(mouseY - displayY) < 15 + countDisplay.clientHeight) {
-      const d = Math.sqrt(Math.pow(mouseX - displayX, 2) + Math.pow(mouseY - displayY, 2));
+    if(Math.abs(mouseX - displayX) <= 15 + countDisplay.clientWidth && Math.abs(mouseY - displayY) <= 15 + countDisplay.clientHeight) {
+      setOpacityTimeout(); // 透明度をいったん戻す
+      const d = 80;
       const angle = Math.atan2(displayY - mouseY, displayX - mouseX);
-      countDisplay.style.top = clientRect.top + Math.sin(angle)*d + 'px';
-      // countDisplay.style.left = clientRect.left + Math.cos(angle)*d + 'px';
-    } else if (Math.abs(mouseX - displayX) > 15 + countDisplay.clientWidth && Math.abs(mouseY - displayY) > 15 + countDisplay.clientHeight){
+      countDisplay.style.top = clientRect.top + window.scrollY + Math.sin(angle)*d + 'px';
+      isRunningAwayFromCursor = true;
+    } else if (isRunningAwayFromCursor && Math.abs(mouseX - displayX) > 15 + countDisplay.clientWidth && Math.abs(mouseY - displayY) > 15 + countDisplay.clientHeight){
+      setOpacityTimeout(); // 透明度をいったん戻す
       // カーソルが離れたら元の位置に戻す
-      setCoordinate(element);
+      setCoordinate(element, true);
+      isRunningAwayFromCursor = false;
     }
 
   }
