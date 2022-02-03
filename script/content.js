@@ -75,6 +75,9 @@
         element.addEventListener('focus', handleFocus);
 
         element.addEventListener('blur', handleBlur);
+        
+        // autofocus 要素への対応
+        if(document.activeElement === element) handleFocus();
       }
     })
   }
@@ -155,7 +158,7 @@
    * @param {Number} interval 間引きする間隔(デフォルトでは1280ms)
    * @returns {Function} 
    */
-  var throttle = (function (callback, interval = 256) {
+  const throttle = (function (callback, interval = 256) {
     var time = Date.now(),
       lag,
       debounceTimer,
@@ -190,7 +193,7 @@
     const mouseX = e.pageX;
     const mouseY = e.pageY;
 
-    if(Math.abs(mouseX - displayX) < 15 + countDisplay.clientWidth && Math.abs(mouseY - displayY) < 15 + countDisplay.clientHeight) {
+    if(Math.abs(mouseX - displayX) <= 15 + countDisplay.clientWidth && Math.abs(mouseY - displayY) <= 15 + countDisplay.clientHeight) {
       setOpacityTimeout(); // 透明度をいったん戻す
       const d = 80;
       const angle = Math.atan2(displayY - mouseY, displayX - mouseX);
