@@ -16,4 +16,4 @@ A browser extension which counts characters in textboxes or textareas.
 ![プライバシーを尊重しています。当拡張機能は、ご利用者様の情報を一切収集していません。](https://user-images.githubusercontent.com/75155258/152376008-ec62b2d4-aa59-4bc2-85b2-60abfad5e47b.png)
 
 
-
+[進捗](https://github.com/r-40021/count-character/projects/1)
