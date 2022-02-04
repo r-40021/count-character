@@ -114,13 +114,14 @@
 
   /**
    * 文字数ディスプレイの透明度を2秒後に下げる
+   * @param {Boolean} [enableDisplay=true] 非表示のカウンターを再度表示するか否か
    */
-  function setOpacityTimeout() {
+  function setOpacityTimeout(enableDisplay = true) {
     clearTimeout(opacityTimeout);
     clearTimeout(displayTimeout);
     if (countDisplay) {
       countDisplay.style.opacity = 0.9
-      countDisplay.style.display = '';
+      if (enableDisplay )countDisplay.style.display = '';
     }
     opacityTimeout = setTimeout(() => {
       if (countDisplay) countDisplay.style.opacity = 0.2;
@@ -193,14 +194,14 @@
     const mouseX = e.pageX;
     const mouseY = e.pageY;
 
-    if(Math.abs(mouseX - displayX) <= 15 + countDisplay.clientWidth && Math.abs(mouseY - displayY) <= 15 + countDisplay.clientHeight) {
-      setOpacityTimeout(); // 透明度をいったん戻す
+    if(Math.abs(mouseX - displayX) <= 15 + countDisplay.clientWidth && Math.abs(mouseY - displayY) <= 15 + countDisplay.clientHeight && countDisplay.style.display !== 'none') {
+      setOpacityTimeout(false); // 透明度をいったん戻す
       const d = 80;
       const angle = Math.atan2(displayY - mouseY, displayX - mouseX);
       countDisplay.style.top = clientRect.top + window.scrollY + Math.sin(angle)*d + 'px';
       isRunningAwayFromCursor = true;
     } else if (isRunningAwayFromCursor && Math.abs(mouseX - displayX) > 15 + countDisplay.clientWidth && Math.abs(mouseY - displayY) > 15 + countDisplay.clientHeight){
-      setOpacityTimeout(); // 透明度をいったん戻す
+      setOpacityTimeout(false); // 透明度をいったん戻す
       // カーソルが離れたら元の位置に戻す
       setCoordinate(element, true);
       isRunningAwayFromCursor = false;
